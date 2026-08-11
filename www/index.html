@@ -1,0 +1,646 @@
+
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BuildMaster Studio - Cloud Compiler & Manager</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        mono: {
+                            50: '#ffffff',
+                            100: '#f4f4f5',
+                            200: '#e4e4e7',
+                            300: '#d4d4d8',
+                            400: '#a1a1aa',
+                            500: '#71717a',
+                            600: '#52525b',
+                            700: '#3f3f46',
+                            800: '#27272a',
+                            900: '#18181b',
+                            950: '#09090b',
+                            1000: '#000000'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts & JSZip & Lucide -->
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #000000;
+            color: #ffffff;
+        }
+        .mono-card {
+            background: rgba(18, 18, 18, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #000000;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #27272a;
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #3f3f46;
+        }
+        .glow-white {
+            box-shadow: 0 0 25px rgba(255, 255, 255, 0.15);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-white selection:text-black">
+
+    <!-- Navbar -->
+    <header class="sticky top-0 z-50 mono-card border-b border-mono-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo -->
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-white text-black flex items-center justify-center font-bold shadow-lg">
+                        <i data-lucide="terminal" class="w-6 h-6 text-black"></i>
+                    </div>
+                    <div>
+                        <span class="text-xl font-extrabold tracking-tight text-white">BUILDMASTER</span>
+                        <span class="text-[10px] bg-white text-black font-extrabold px-2 py-0.5 rounded-full ml-2 uppercase tracking-widest">REAL BUILD</span>
+                    </div>
+                </div>
+
+                <!-- User Profile -->
+                <div id="user-profile" class="hidden flex items-center space-x-3 bg-mono-900 border border-mono-800 px-3 py-1.5 rounded-full">
+                    <img id="user-avatar" class="w-6 h-6 rounded-full border border-white" src="" alt="Avatar">
+                    <span id="user-login" class="text-xs font-mono font-semibold text-white"></span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full">
+        
+        <!-- Header Title -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-2 uppercase">
+                Direct Cloud Compiler & Repo Manager
+            </h1>
+            <p class="text-mono-400 text-xs sm:text-sm max-w-2xl mx-auto font-mono">
+                Sistem otomatisasi GitHub REST API. Build APK Android, deploy Website, serta kelola & hapus Repository secara otomatis.
+            </p>
+        </div>
+
+        <!-- Mode Tabs -->
+        <div class="flex justify-center mb-8">
+            <div class="bg-mono-900 p-1.5 rounded-2xl border border-mono-800 flex space-x-2 max-w-xl w-full">
+                <button id="tab-apk" onclick="switchMode('apk')" class="flex-1 flex items-center justify-center space-x-2 py-3 px-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 bg-white text-black shadow-lg">
+                    <i data-lucide="smartphone" class="w-4 h-4"></i>
+                    <span>Build APK</span>
+                </button>
+                <button id="tab-web" onclick="switchMode('web')" class="flex-1 flex items-center justify-center space-x-2 py-3 px-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 text-mono-400 hover:text-white">
+                    <i data-lucide="globe" class="w-4 h-4"></i>
+                    <span>Build Website</span>
+                </button>
+                <button id="tab-repos" onclick="switchMode('repos')" class="flex-1 flex items-center justify-center space-x-2 py-3 px-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 text-mono-400 hover:text-white">
+                    <i data-lucide="folder-git-2" class="w-4 h-4"></i>
+                    <span>Repo Manager</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Form & Terminal Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- Left Input Form -->
+            <div class="lg:col-span-7 space-y-6">
+                
+                <!-- Token Box -->
+                <div class="mono-card rounded-2xl p-6 space-y-4">
+                    <div class="flex items-center justify-between border-b border-mono-800 pb-3">
+                        <label class="block text-xs font-bold text-mono-300 uppercase tracking-wider">
+                            1. Personal Access Token GitHub <span class="text-red-500">*</span>
+                        </label>
+                        <a href="https://github.com/settings/tokens/new?scopes=repo,workflow,delete_repo" target="_blank" class="text-[11px] text-white hover:underline flex items-center gap-1 font-mono">
+                            Get Token <i data-lucide="external-link" class="w-3 h-3"></i>
+                        </a>
+                    </div>
+                    <div class="relative">
+                        <input type="password" id="gh-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" class="w-full bg-mono-950 border border-mono-800 rounded-xl px-4 py-3 text-xs font-mono text-white placeholder-mono-600 focus:outline-none focus:border-white transition-all pl-10">
+                        <i data-lucide="key" class="w-4 h-4 text-mono-500 absolute left-3.5 top-3.5"></i>
+                        <button onclick="verifyToken()" class="absolute right-2 top-2 bg-white hover:bg-mono-200 text-black font-bold text-xs px-3 py-1.5 rounded-lg transition-colors">
+                            Verifikasi
+                        </button>
+                    </div>
+                    <p class="text-[10px] text-mono-500 font-mono">Scope wajib: <code class="text-white">repo</code>, <code class="text-white">workflow</code>, & <code class="text-white">delete_repo</code> (untuk fitur hapus).</p>
+                </div>
+
+                <!-- MODE 1: BUILD APK -->
+                <div id="form-apk" class="mono-card rounded-2xl p-6 space-y-5">
+                    <div class="border-b border-mono-800 pb-3 flex justify-between items-center">
+                        <h2 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                            <i data-lucide="smartphone" class="w-4 h-4 text-white"></i>
+                            Konfigurasi Build APK Android
+                        </h2>
+                        <span class="text-[10px] font-mono bg-mono-800 text-mono-300 px-2 py-0.5 rounded">Capacitor JDK 21</span>
+                    </div>
+
+                    <!-- Source Selector (URL vs FILE) -->
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-mono-300 uppercase tracking-wider">
+                            2. Sumber Project (URL / File) <span class="text-red-500">*</span>
+                        </label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button type="button" id="src-type-url" onclick="setApkSourceType('url')" class="py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 border-white bg-white text-black">
+                                <i data-lucide="link" class="w-3.5 h-3.5"></i> Website URL
+                            </button>
+                            <button type="button" id="src-type-file" onclick="setApkSourceType('file')" class="py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 border-mono-800 bg-mono-950 text-mono-400 hover:text-white">
+                                <i data-lucide="file-archive" class="w-3.5 h-3.5"></i> Upload ZIP / HTML
+                            </button>
+                        </div>
+
+                        <!-- Container URL -->
+                        <div id="apk-url-box" class="relative mt-2">
+                            <input type="url" id="apk-url" placeholder="https://website-kamu.com" class="w-full bg-mono-950 border border-mono-800 rounded-xl px-4 py-3 text-xs font-mono text-white placeholder-mono-600 focus:outline-none focus:border-white pl-10">
+                            <i data-lucide="globe" class="w-4 h-4 text-mono-500 absolute left-3.5 top-3.5"></i>
+                        </div>
+
+                        <!-- Container FILE -->
+                        <div id="apk-file-box" class="hidden mt-2">
+                            <div class="border-2 border-dashed border-mono-800 rounded-xl p-5 text-center hover:border-white transition-colors cursor-pointer bg-mono-950/50" onclick="document.getElementById('apk-file-input').click()">
+                                <i data-lucide="upload-cloud" class="w-8 h-8 text-white mx-auto mb-2"></i>
+                                <p class="text-xs text-mono-300 font-semibold">Pilih file HTML atau ZIP Website</p>
+                                <p class="text-[10px] text-mono-500 font-mono mt-1">Dapat berjalan offline jika file ZIP/HTML mandiri</p>
+                                <input type="file" id="apk-file-input" accept=".zip,.html" class="hidden" onchange="handleApkFileSelect(this)">
+                            </div>
+                            <p id="apk-file-status" class="text-xs text-white font-mono hidden flex items-center gap-1 mt-2">
+                                <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-white"></i> <span id="apk-file-name"></span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Icon Aplikasi (Foto Profil / Logo App) -->
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-mono-300 uppercase tracking-wider">
+                            3. Foto / Logo Icon Aplikasi (PP App)
+                        </label>
+                        <div class="flex items-center space-x-4 bg-mono-950 border border-mono-800 p-3 rounded-xl">
+                            <div id="icon-preview-box" class="w-12 h-12 rounded-xl bg-mono-900 border border-mono-700 flex items-center justify-center overflow-hidden shrink-0">
+                                <i data-lucide="image" class="w-6 h-6 text-mono-600"></i>
+                            </div>
+                            <div class="flex-grow">
+                                <button type="button" onclick="document.getElementById('apk-icon-input').click()" class="bg-mono-800 hover:bg-mono-700 text-white font-mono text-xs px-3 py-1.5 rounded-lg border border-mono-700 transition-colors">
+                                    Pilih File Gambar (.png/.jpg)
+                                </button>
+                                <p class="text-[10px] text-mono-500 font-mono mt-1">Disarankan gambar berbentuk persegi (misal 512x512px)</p>
+                                <input type="file" id="apk-icon-input" accept="image/png, image/jpeg" class="hidden" onchange="handleIconSelect(this)">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- App & Repo Metadata -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-bold text-mono-300 uppercase mb-1">Nama Aplikasi</label>
+                            <input type="text" id="apk-app-name" value="My App" class="w-full bg-mono-950 border border-mono-800 rounded-xl px-3.5 py-2.5 text-xs font-mono text-white focus:outline-none focus:border-white">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-mono-300 uppercase mb-1">Nama Repository</label>
+                            <input type="text" id="apk-repo-name" value="my-apk-build" class="w-full bg-mono-950 border border-mono-800 rounded-xl px-3.5 py-2.5 text-xs font-mono text-white focus:outline-none focus:border-white">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-mono-300 uppercase mb-1">Package ID (App Unique ID)</label>
+                        <input type="text" id="apk-package-id" value="com.myapp.app" class="w-full bg-mono-950 border border-mono-800 rounded-xl px-3.5 py-2.5 text-xs font-mono text-white focus:outline-none focus:border-white" placeholder="com.company.appname">
+                    </div>
+
+                    <!-- Android Permissions Lengkap -->
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <label class="block text-xs font-bold text-mono-300 uppercase tracking-wider">
+                                4. Permission Android Lengkap
+                            </label>
+                            <button type="button" onclick="selectAllPermissions(true)" class="text-[11px] text-white hover:underline font-mono">Centang Semua</button>
+                        </div>
+                        <div class="bg-mono-950 border border-mono-800 rounded-xl p-4 grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs font-mono">
+                            <label class="flex items-center space-x-2 text-mono-300 cursor-pointer">
+                                <input type="checkbox" checked class="apk-perm-checkbox rounded bg-mono-900 border-mono-700 text-white focus:ring-white" value="android.permission.INTERNET">
+                                <span>INTERNET</span>
+                            </label>
+                            <label class="flex items-center space-x-2 text-mono-300 cursor-pointer">
+                                <input type="checkbox" checked class="apk-perm-checkbox rounded bg-mono-900 border-mono-700 text-white focus:ring-white" value="android.permission.CAMERA">
+                                <span>CAMERA</span>
+                            </label>
+                            <label class="flex items-center space-x-2 text-mono-300 cursor-pointer">
+                                <input type="checkbox" checked class="apk-perm-checkbox rounded bg-mono-900 border-mono-700 text-white focus:ring-white" value="android.permission.ACCESS_FINE_LOCATION">
+                                <span>FINE_LOCATION</span>
+                            </label>
+                            <label class="flex items-center space-x-2 text-mono-300 cursor-pointer">
+                                <input type="checkbox" checked class="apk-perm-checkbox rounded bg-mono-900 border-mono-700 text-white focus:ring-white" value="android.permission.WRITE_EXTERNAL_STORAGE">
+                                <span>WRITE_STORAGE</span>
+                            </label>
+                            <label class="flex items-center space-x-2 text-mono-300 cursor-pointer">
+                                <input type="checkbox" checked class="apk-perm-checkbox rounded bg-mono-900 border-mono-700 text-white focus:ring-white" value="android.permission.READ_EXTERNAL_STORAGE">
+                                <span>READ_STORAGE</span>
+                            </label>
+                            <label class="flex items-center space-x-2 text-mono-300 cursor-pointer">
+                                <input type="checkbox" checked class="apk-perm-checkbox rounded bg-mono-900 border-mono-700 text-white focus:ring-white" value="android.permission.RECORD_AUDIO">
+                                <span>MICROPHONE</span>
+                            </label>
+                            <label class="flex items-center space-x-2 text-mono-300 cursor-pointer">
+                                <input type="checkbox" checked class="apk-perm-checkbox rounded bg-mono-900 border-mono-700 text-white focus:ring-white" value="android.permission.POST_NOTIFICATIONS">
+                                <span>NOTIFICATIONS</span>
+                            </label>
+                            <label class="flex items-center space-x-2 text-mono-300 cursor-pointer">
+                                <input type="checkbox" checked class="apk-perm-checkbox rounded bg-mono-900 border-mono-700 text-white focus:ring-white" value="android.permission.ACCESS_NETWORK_STATE">
+                                <span>NETWORK_STATE</span>
+                            </label>
+                            <label class="flex items-center space-x-2 text-mono-300 cursor-pointer">
+                                <input type="checkbox" checked class="apk-perm-checkbox rounded bg-mono-900 border-mono-700 text-white focus:ring-white" value="android.permission.VIBRATE">
+                                <span>VIBRATE</span>
+                            </label>
+                            <label class="flex items-center space-x-2 text-mono-300 cursor-pointer">
+                                <input type="checkbox" checked class="apk-perm-checkbox rounded bg-mono-900 border-mono-700 text-white focus:ring-white" value="android.permission.WAKE_LOCK">
+                                <span>WAKE_LOCK</span>
+                            </label>
+                            <label class="flex items-center space-x-2 text-mono-300 cursor-pointer">
+                                <input type="checkbox" class="apk-perm-checkbox rounded bg-mono-900 border-mono-700 text-white focus:ring-white" value="android.permission.BLUETOOTH">
+                                <span>BLUETOOTH</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <button onclick="startBuildApkProcess()" id="btn-apk" class="w-full py-4 rounded-xl font-extrabold text-black bg-white hover:bg-mono-200 transition-all flex items-center justify-center space-x-2 text-xs tracking-wider uppercase glow-white">
+                        <i data-lucide="play" class="w-4 h-4 text-black"></i>
+                        <span>EKSEKUSI BUILD APK OTOMATIS</span>
+                    </button>
+                </div>
+
+                <!-- MODE 2: BUILD WEBSITE -->
+                <div id="form-web" class="mono-card rounded-2xl p-6 space-y-5 hidden">
+                    <div class="border-b border-mono-800 pb-3">
+                        <h2 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                            <i data-lucide="globe" class="w-4 h-4 text-white"></i>
+                            Konfigurasi Deployment Website
+                        </h2>
+                    </div>
+
+                    <!-- File Upload -->
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-mono-300 uppercase tracking-wider">
+                            2. File Source Code Website (.zip / .html) <span class="text-red-500">*</span>
+                        </label>
+                        <div class="border-2 border-dashed border-mono-800 rounded-xl p-5 text-center hover:border-white transition-colors cursor-pointer bg-mono-950/50" onclick="document.getElementById('web-file-input').click()">
+                            <i data-lucide="upload-cloud" class="w-8 h-8 text-white mx-auto mb-2"></i>
+                            <p class="text-xs text-mono-300 font-semibold">Pilih File HTML Tunggal atau ZIP Website</p>
+                            <input type="file" id="web-file-input" accept=".zip,.html" class="hidden" onchange="handleWebFileSelect(this)">
+                        </div>
+                        <p id="web-file-status" class="text-xs text-white font-mono hidden flex items-center gap-1 mt-2">
+                            <i data-lucide="check" class="w-3.5 h-3.5"></i> <span id="web-file-name"></span>
+                        </p>
+                    </div>
+
+                    <!-- Repo Name -->
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-mono-300 uppercase tracking-wider">
+                            3. Nama Repository GitHub <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="web-repo-name" placeholder="my-awesome-website" class="w-full bg-mono-950 border border-mono-800 rounded-xl px-4 py-3 text-xs font-mono text-white focus:outline-none focus:border-white">
+                    </div>
+
+                    <button onclick="startBuildWebProcess()" id="btn-web" class="w-full py-4 rounded-xl font-extrabold text-black bg-white hover:bg-mono-200 transition-all flex items-center justify-center space-x-2 text-xs tracking-wider uppercase glow-white">
+                        <i data-lucide="rocket" class="w-4 h-4 text-black"></i>
+                        <span>DEPLOY WEBSITE KE GITHUB PAGES</span>
+                    </button>
+                </div>
+
+                <!-- MODE 3: REPO MANAGER -->
+                <div id="form-repos" class="mono-card rounded-2xl p-6 space-y-5 hidden">
+                    <div class="border-b border-mono-800 pb-3 flex justify-between items-center">
+                        <h2 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                            <i data-lucide="folder-git-2" class="w-4 h-4 text-white"></i>
+                            GitHub Repository Manager
+                        </h2>
+                        <button onclick="fetchRepositories()" class="text-xs font-mono bg-mono-800 hover:bg-mono-700 text-white px-2.5 py-1 rounded flex items-center gap-1">
+                            <i data-lucide="refresh-cw" class="w-3 h-3"></i> Refresh
+                        </button>
+                    </div>
+
+                    <!-- List Repositories -->
+                    <div id="repo-list-container" class="space-y-3 max-h-96 overflow-y-auto custom-scrollbar pr-1">
+                        <p class="text-xs font-mono text-mono-500 text-center py-4">Verifikasi Token untuk menampilkan daftar repository Anda.</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Terminal Screen & Realtime Status -->
+            <div class="lg:col-span-5 space-y-6">
+                
+                <!-- Status Bar Card -->
+                <div class="mono-card rounded-2xl p-6">
+                    <h3 class="text-xs font-bold text-mono-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <i data-lucide="activity" class="w-4 h-4 text-white"></i> Status Monitor Realtime
+                    </h3>
+                    <div class="bg-mono-950 border border-mono-800 p-4 rounded-xl flex items-center gap-3">
+                        <div id="status-icon" class="p-2 rounded-lg bg-mono-900 text-mono-500">
+                            <i data-lucide="clock" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <p id="status-title" class="text-sm font-bold text-white">Menunggu Perintah</p>
+                            <p id="status-desc" class="text-xs text-mono-400 font-mono">Masukkan Token & Klik Eksekusi.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Console Terminal Log -->
+                <div class="mono-card rounded-2xl p-5 flex flex-col h-80">
+                    <div class="flex items-center justify-between pb-2 border-b border-mono-800 mb-2">
+                        <span class="text-xs font-mono text-mono-400 flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> Terminal Output
+                        </span>
+                        <button onclick="clearConsole()" class="text-[11px] text-mono-500 hover:text-white font-mono">Clear</button>
+                    </div>
+                    <div id="console-log" class="bg-mono-1000 font-mono text-[11px] text-mono-200 p-3 rounded-xl flex-grow overflow-y-auto custom-scrollbar space-y-1 border border-mono-900">
+                        <div class="text-mono-600">[System] Siap melakukan transmisi API.</div>
+                    </div>
+                </div>
+
+                <!-- Automatic Download / Result Box -->
+                <div id="result-card" class="mono-card rounded-2xl p-5 border-2 border-white bg-mono-900 hidden">
+                    <h4 id="result-title" class="text-sm font-extrabold text-white mb-1 uppercase tracking-wider">BUILD SELESAI & SIAP!</h4>
+                    <p id="result-desc" class="text-xs text-mono-300 font-mono mb-4">File APK terkompilasi siap diunduh otomatis secara langsung.</p>
+                    
+                    <a id="result-btn" href="#" download class="inline-flex items-center justify-center gap-2 w-full py-3 px-4 bg-white hover:bg-mono-200 text-black font-extrabold text-xs uppercase rounded-xl transition-all shadow-lg">
+                        <i data-lucide="download" id="result-btn-icon" class="w-4 h-4"></i>
+                        <span id="result-btn-text">UNDUH APK LANGSUNG (.ZIP)</span>
+                    </a>
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="mono-card border-t border-mono-800 py-4 text-center text-xs text-mono-500 font-mono">
+        BuildMaster Real Cloud Compiler &copy; 2026
+    </footer>
+
+    <!-- Logic Script -->
+    <script>
+        lucide.createIcons();
+
+        let currentMode = 'apk';
+        let currentUser = null;
+        let selectedApkSourceType = 'url';
+        let selectedApkFile = null;
+        let selectedApkIcon = null;
+        let selectedWebFile = null;
+        let pollingInterval = null;
+
+        function switchMode(mode) {
+            currentMode = mode;
+            document.getElementById('tab-apk').className = mode === 'apk' 
+                ? "flex-1 flex items-center justify-center space-x-2 py-3 px-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 bg-white text-black shadow-lg"
+                : "flex-1 flex items-center justify-center space-x-2 py-3 px-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 text-mono-400 hover:text-white";
+            
+            document.getElementById('tab-web').className = mode === 'web'
+                ? "flex-1 flex items-center justify-center space-x-2 py-3 px-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 bg-white text-black shadow-lg"
+                : "flex-1 flex items-center justify-center space-x-2 py-3 px-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 text-mono-400 hover:text-white";
+
+            document.getElementById('tab-repos').className = mode === 'repos'
+                ? "flex-1 flex items-center justify-center space-x-2 py-3 px-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 bg-white text-black shadow-lg"
+                : "flex-1 flex items-center justify-center space-x-2 py-3 px-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 text-mono-400 hover:text-white";
+
+            document.getElementById('form-apk').classList.toggle('hidden', mode !== 'apk');
+            document.getElementById('form-web').classList.toggle('hidden', mode !== 'web');
+            document.getElementById('form-repos').classList.toggle('hidden', mode !== 'repos');
+
+            if (mode === 'repos' && currentUser) {
+                fetchRepositories();
+            }
+        }
+
+        function setApkSourceType(type) {
+            selectedApkSourceType = type;
+            const btnUrl = document.getElementById('src-type-url');
+            const btnFile = document.getElementById('src-type-file');
+            const boxUrl = document.getElementById('apk-url-box');
+            const boxFile = document.getElementById('apk-file-box');
+
+            if (type === 'url') {
+                btnUrl.className = "py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 border-white bg-white text-black";
+                btnFile.className = "py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 border-mono-800 bg-mono-950 text-mono-400 hover:text-white";
+                boxUrl.classList.remove('hidden');
+                boxFile.classList.add('hidden');
+            } else {
+                btnFile.className = "py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 border-white bg-white text-black";
+                btnUrl.className = "py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 border-mono-800 bg-mono-950 text-mono-400 hover:text-white";
+                boxFile.classList.remove('hidden');
+                boxUrl.classList.add('hidden');
+            }
+        }
+
+        function selectAllPermissions(checked) {
+            document.querySelectorAll('.apk-perm-checkbox').forEach(cb => cb.checked = checked);
+        }
+
+        function handleApkFileSelect(input) {
+            if (input.files && input.files[0]) {
+                selectedApkFile = input.files[0];
+                document.getElementById('apk-file-name').innerText = selectedApkFile.name;
+                document.getElementById('apk-file-status').classList.remove('hidden');
+                log(`File APK Source dimuat: ${selectedApkFile.name}`, 'sys');
+            }
+        }
+
+        function handleIconSelect(input) {
+            if (input.files && input.files[0]) {
+                selectedApkIcon = input.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const previewBox = document.getElementById('icon-preview-box');
+                    previewBox.innerHTML = `<img src="${e.target.result}" class="w-full h-full object-cover">`;
+                };
+                reader.readAsDataURL(selectedApkIcon);
+                log(`Logo / Icon App dimuat: ${selectedApkIcon.name}`, 'sys');
+            }
+        }
+
+        function handleWebFileSelect(input) {
+            if (input.files && input.files[0]) {
+                selectedWebFile = input.files[0];
+                document.getElementById('web-file-name').innerText = selectedWebFile.name;
+                document.getElementById('web-file-status').classList.remove('hidden');
+                log(`File Website dimuat: ${selectedWebFile.name}`, 'sys');
+            }
+        }
+
+        function log(msg, type = 'info') {
+            const consoleLog = document.getElementById('console-log');
+            const div = document.createElement('div');
+            const time = new Date().toLocaleTimeString();
+            let color = 'text-mono-200';
+            if (type === 'error') color = 'text-red-400 font-bold';
+            if (type === 'warn') color = 'text-yellow-400';
+            if (type === 'sys') color = 'text-white font-bold';
+
+            div.className = `${color} text-[11px]`;
+            div.innerHTML = `<span class="text-mono-600">[${time}]</span> ${msg}`;
+            consoleLog.appendChild(div);
+            consoleLog.scrollTop = consoleLog.scrollHeight;
+        }
+
+        function clearConsole() {
+            document.getElementById('console-log').innerHTML = '';
+        }
+
+        function updateStatus(title, desc, isSpinner = false, isSuccess = false) {
+            document.getElementById('status-title').innerText = title;
+            document.getElementById('status-desc').innerText = desc;
+            const iconDiv = document.getElementById('status-icon');
+            
+            if (isSpinner) {
+                iconDiv.className = "p-2 rounded-lg bg-white text-black animate-spin";
+                iconDiv.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5"></i>`;
+            } else if (isSuccess) {
+                iconDiv.className = "p-2 rounded-lg bg-white text-black";
+                iconDiv.innerHTML = `<i data-lucide="check-circle" class="w-5 h-5"></i>`;
+            } else {
+                iconDiv.className = "p-2 rounded-lg bg-mono-900 text-mono-500";
+                iconDiv.innerHTML = `<i data-lucide="clock" class="w-5 h-5"></i>`;
+            }
+            lucide.createIcons();
+        }
+
+        // VERIFY TOKEN
+        async function verifyToken() {
+            const token = document.getElementById('gh-token').value.trim();
+            if (!token) return alert('Silakan masukkan Token GitHub!');
+
+            log('Memverifikasi GitHub Token...', 'sys');
+            try {
+                const res = await fetch('https://api.github.com/user', {
+                    headers: { 'Authorization': `token ${token}` }
+                });
+                if (!res.ok) throw new Error('Token expired atau salah.');
+
+                currentUser = await res.json();
+                log(`Autentikasi Berhasil! User: @${currentUser.login}`, 'sys');
+                
+                document.getElementById('user-profile').classList.remove('hidden');
+                document.getElementById('user-avatar').src = currentUser.avatar_url;
+                document.getElementById('user-login').innerText = `@${currentUser.login}`;
+                updateStatus('Token Terverifikasi', `@${currentUser.login} terhubung`, false, true);
+
+                if (currentMode === 'repos') fetchRepositories();
+                return true;
+            } catch (err) {
+                log(`Gagal Verifikasi: ${err.message}`, 'error');
+                alert(`Gagal: ${err.message}`);
+                return false;
+            }
+        }
+
+        function utf8ToBase64(str) {
+            return window.btoa(unescape(encodeURIComponent(str)));
+        }
+
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        async function createGitHubRepo(token, repoName) {
+            log(`Mengecek / Membuat Repository: ${repoName}...`, 'sys');
+            const res = await fetch('https://api.github.com/user/repos', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name: repoName, auto_init: true, private: false })
+            });
+
+            if (res.status === 422) {
+                log(`Repo '${repoName}' sudah ada. Siap pakai.`, 'warn');
+                return true;
+            }
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.message || 'Gagal membuat repo');
+            }
+            log(`Repository '${repoName}' berhasil dibuat.`, 'info');
+            return true;
+        }
+
+        async function uploadFileToRepo(token, owner, repo, path, contentBase64, commitMsg) {
+            let sha = undefined;
+            try {
+                const getRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+                    headers: { 'Authorization': `token ${token}` }
+                });
+                if (getRes.ok) {
+                    const fileData = await getRes.json();
+                    sha = fileData.sha;
+                }
+            } catch (e) {}
+
+            const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message: commitMsg, content: contentBase64, sha: sha })
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(`Gagal push ${path}: ${err.message}`);
+            }
+            log(`Push Sukses: ${path}`, 'info');
+        }
+
+        // FETCH DAN TAMPILKAN DAFTAR REPOSITORY
+        async function fetchRepositories() {
+            const token = document.getElementById('gh-token').value.trim();
+            if (!token) return;
+
+            log('Memuat daftar repository pengguna...', 'sys');
+            const container = document.getElementById('repo-list-container');
+            container.innerHTML = `<p class="text-xs font-mono text-mono-400 text-center py-4">Memuat data...</p>`;
+
+            try {
+                const res = await fetch('https://api.github.com/user/repos?sort=updated&per_page=30', {
+                    headers: { 'Authorization': `token ${token}` }
+                });
+                if (!res.ok) throw new Error('Gagal mengambil repo');
+
+                const repos = await res.json();
+                if (repos.length === 0) {
+                    container.innerHTML = `<p class="text-xs font-mono text-mono-500 text-center py-4">Tidak ada reposit
